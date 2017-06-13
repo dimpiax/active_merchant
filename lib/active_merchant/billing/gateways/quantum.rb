@@ -73,6 +73,14 @@ module ActiveMerchant #:nodoc:
         refund(money, identification, options)
       end
 
+      def customer(creditcard, options={})
+        commit(build_customer_request(creditcard, options), options)
+      end
+
+      def transaction(amount, customer_id)
+        commit(build_transaction_request(amount, customer_id), options)
+      end
+
       private
 
       def setup_address_hash(options)
@@ -129,6 +137,32 @@ module ActiveMerchant #:nodoc:
         add_transaction_id(xml, transaction_id)
         xml.tag! 'CreditCardNumber', cc
         xml.target!
+      end
+
+      def build_customer_request(creditcard, options)
+        xml = Builder::XmlMarkup.new
+        add_customer_common_info(xml)
+        add_creditcard(xml, creditcard)
+        add_address(xml, creditcard, options[:billing_address], options)
+        add_customer_details(xml, options)
+        xml.target!
+      end
+
+      def build_transaction_request(amount, customer_id)
+        xml = Builder::XmlMarkup.new
+        add_common_transaction_info(xml)
+        add_purchase_data(xml, amount)
+        add_customer_details xml, customer: customer_id
+      end
+
+      def add_customer_common_info(xml)
+        xml.tag! 'RequestType', 'AddUpdateCustomer'
+        xml.tag! 'Country', 'USA'
+      end
+
+      def add_common_transaction_info(xml)
+        xml.tag! 'RequestType', 'CreateTransaction'
+        xml.tag! 'Memo', 'Privacy Protection Kit'
       end
 
       def add_common_credit_card_info(xml, process_type)
